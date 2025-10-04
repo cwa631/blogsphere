@@ -1,4 +1,4 @@
-// Format date/time
+// Utility: format date/time
 function formatDate(ts) {
     const d = new Date(ts);
     const opts = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -13,46 +13,43 @@ function formatDate(ts) {
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-
-
-
-// Blog posts
+// POSTS DATA
 const postsData = [
     {
         id: 1,
-        title: 'Exploring the Wonders of the Night Sky',
-        description: 'Discover the beauty of constellations, galaxies, and shooting stars as we take a journey through the cosmic wonders above us. Perfect for stargazers and dreamers alike.',
-        quote: 'The cosmos is within us. We are made of star-stuff." – Carl Sagan.',
+        title: 'Navratri at Home – A Journey of 10 Sacred Evenings',
+        description: 'Navratri for me is not just a festival it is a sacred journey of the soul, where every morning begins with puja, mantras, and aarti, and every evening glows brighter with diyas, incense, and sacred chants, filling our home with divine energy. For ten days, I worship the ten forms of Maa Durga Shailputri, Brahmacharini, Chandraghanta, Kushmanda, Skandamata, Katyayani, Kalratri, Mahagauri, Siddhidatri, and finally Maa Durga in her complete form—and through every prayer, hawan, and offering, I feel her presence touching my heart and our family with strength, peace, and devotion. The fragrance of incense, the warmth of the sacred fire, the ringing of bells, and the unity of family transform every ritual into a deeply emotional moment, where faith, love, and gratitude flow together. On the last day, Kanya Pujan and the concluding hawan fill me with overwhelming reverence and joy, as I offer gratitude for the blessings of all ten days. Navratri at home is not just tradition it is living devotion, where every prayer becomes a promise, every flame a blessing, and every heartbeat a reminder that the Goddess resides within us and around us, in every sacred moment we share.',
+        quote: 'Navratri is not celebrated it is lived, in every prayer we chant, every diya we light, and every heart we fill with devotion.',
         images: [
-            'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80'
+            './assets/navratri/pic1.jpeg',
+            './assets/navratri/pic2.jpeg',
+            './assets/navratri/pic3.jpeg',
+            './assets/navratri/pic4.jpeg',
+            './assets/navratri/pic5.jpeg',
+            './assets/navratri/pic6.jpeg',
+            './assets/navratri/pic7.jpeg',
+            './assets/navratri/video1.mp4'
         ],
         ts: Date.now(),
         isNew: true
-    },
-    //  {
-    //    id: 2,
-    //    title: 'Dusra Post',
-    //    description: 'Isme ek aur image example diya gaya hai.',
-    //    quote: 'Sapne wahi sach hote hain jo jag kar dekhe jate hain.',
-    //    images: [
-    //    'assets/pic-1.jpg',
-    //  'assets/pic-2.jpg',
-    //'assets/pic-3.png'
-    //    ],
-    //    ts: Date.now(),
-    //    isNew: false
-    // }   
+    }
 ];
 
+// container
 const postsEl = document.getElementById('posts');
 
+// helper: set attributes for accessibility + security for images
+function finalizeImage(img) {
+    img.setAttribute('draggable', 'false');
+    img.setAttribute('loading', 'lazy');
+    img.style.userSelect = 'none';
+    img.alt = img.alt || 'Blog image';
+}
 
-
-
-// Render posts
+// Render posts with improved carousel and lazy-loading
 function renderPosts() {
     postsEl.innerHTML = '';
-    postsData.forEach((p, pIndex) => {
+    postsData.forEach((p) => {
         const card = document.createElement('article');
         card.className = 'post';
 
@@ -66,40 +63,59 @@ function renderPosts() {
         if (p.images && p.images.length) {
             const carousel = document.createElement('div');
             carousel.className = 'carousel';
+            carousel.setAttribute('role', 'region');
+            carousel.setAttribute('aria-label', p.title + ' media');
+
             const slides = document.createElement('div');
             slides.className = 'slides';
 
-            p.images.forEach(src => {
+            p.images.forEach((src, idx) => {
                 const slide = document.createElement('div');
                 slide.className = 'slide';
-                const img = document.createElement('img');
-                img.src = src;
-                img.alt = p.title;
-                slide.appendChild(img);
+
+                if (src.endsWith('.mp4')) {
+                    // Video element
+                    const video = document.createElement('video');
+                    video.src = src;
+                    video.controls = true;
+                    video.width = 400; // optional size
+                    video.setAttribute('preload', 'metadata');
+                    slide.appendChild(video);
+                } else {
+                    // Image element
+                    const img = document.createElement('img');
+                    img.dataset.src = src;
+                    img.alt = p.title + (idx ? ` image ${idx + 1}` : '');
+                    img.loading = 'lazy';
+                    slide.appendChild(img);
+                }
+
                 slides.appendChild(slide);
             });
+
             carousel.appendChild(slides);
 
             if (p.images.length > 1) {
-                const left = document.createElement('div');
+                const left = document.createElement('button');
                 left.className = 'ctrl left';
+                left.type = 'button';
                 left.textContent = '◀';
-                const right = document.createElement('div');
+                left.setAttribute('aria-hidden', 'true');
+
+                const right = document.createElement('button');
                 right.className = 'ctrl right';
+                right.type = 'button';
                 right.textContent = '▶';
+                right.setAttribute('aria-hidden', 'true');
+
                 carousel.appendChild(left);
                 carousel.appendChild(right);
 
                 let pos = 0;
-
-                // control update function: show/hide controls based on pos
                 function updateControls() {
-                    // hide left on first, hide right on last
-                    left.style.display = (pos === 0) ? 'none' : 'block';
-                    right.style.display = (pos === p.images.length - 1) ? 'none' : 'block';
+                    left.setAttribute('aria-hidden', pos === 0 ? 'true' : 'false');
+                    right.setAttribute('aria-hidden', pos === p.images.length - 1 ? 'true' : 'false');
                 }
-
-                // initialize
                 updateControls();
 
                 left.addEventListener('click', () => {
@@ -114,25 +130,24 @@ function renderPosts() {
                     updateControls();
                 });
 
-                // Optional: keyboard arrow support when focused
+                // keyboard support
                 carousel.tabIndex = 0;
                 carousel.addEventListener('keydown', (e) => {
                     if (e.key === 'ArrowLeft') left.click();
                     if (e.key === 'ArrowRight') right.click();
                 });
 
-                // Optional: simple touch swipe support (mobile)
+                // touch swipe support
                 let startX = 0, endX = 0;
                 carousel.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
                 carousel.addEventListener('touchmove', (e) => { endX = e.touches[0].clientX; }, { passive: true });
                 carousel.addEventListener('touchend', () => {
                     const dx = endX - startX;
-                    if (Math.abs(dx) > 40) {
-                        if (dx < 0) right.click(); else left.click();
-                    }
+                    if (Math.abs(dx) > 40) { if (dx < 0) right.click(); else left.click(); }
                     startX = endX = 0;
                 });
             }
+
             card.appendChild(carousel);
         }
 
@@ -161,37 +176,70 @@ function renderPosts() {
 
         postsEl.appendChild(card);
     });
+
+    // after DOM created — finalize images and setup lazy-loading
+    document.querySelectorAll('.slide img').forEach(img => {
+        finalizeImage(img);
+    });
+
+    setupLazyLoading();
 }
 renderPosts();
 
-// ===================== Security / Content Protection ===================== //
+// LAZY LOADING using IntersectionObserver
+function setupLazyLoading() {
+    const imgs = Array.from(document.querySelectorAll('.slide img'));
+    if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src || img.src;
+                    if (src && img.src !== src) img.src = src;
+                    observer.unobserve(img);
+                }
+            });
+        }, { root: null, rootMargin: '200px', threshold: 0.01 });
 
-// 1️⃣ Right click disable
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// 2️⃣ Keyboard shortcuts disable (F12, Ctrl+Shift+I/J, Ctrl+U)
-document.addEventListener('keydown', e => {
-    if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J'].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && e.key.toUpperCase() === 'U')
-    ) {
-        e.preventDefault();
-        alert("Inspect / View Source is disabled on this page.");
-    }
-});
-
-// 3️⃣ PrintScreen alert (partial prevention)
-document.addEventListener('keyup', function (e) {
-    if (e.key === "PrintScreen") {
-        navigator.clipboard.writeText('Screenshot blocked').then(() => {
-            alert("Screenshot blocked for security reasons.");
+        imgs.forEach(i => {
+            if (i.dataset.src) io.observe(i);
+            else if (i.src) finalizeImage(i);
+        });
+    } else {
+        // fallback
+        imgs.forEach(i => {
+            if (i.dataset.src) i.src = i.dataset.src;
         });
     }
-});
+}
 
-// 4️⃣ Disable image dragging / selection
-document.querySelectorAll('img').forEach(img => {
-    img.setAttribute('draggable', 'false');
-    img.style.userSelect = 'none';
+// ===================== Security / Content Protection ===================== //
+document.addEventListener('contextmenu', e => { e.preventDefault(); });
+document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J'].includes(e.key.toUpperCase())) || (e.ctrlKey && e.key.toUpperCase() === 'U')) {
+        e.preventDefault(); alert("Inspect / View Source is disabled on this page.");
+    }
 });
+document.addEventListener('keyup', function (e) {
+    if (e.key === "PrintScreen") {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText('Screenshot blocked').then(() => {
+                alert("Screenshot blocked for security reasons.");
+            }).catch(() => {/* ignore */ });
+        }
+    }
+});
+const observer = new MutationObserver(muts => {
+    muts.forEach(m => {
+        m.addedNodes.forEach(n => {
+            if (n.nodeType === 1) {
+                n.querySelectorAll && n.querySelectorAll('img').forEach(img => finalizeImage(img));
+            }
+        });
+    });
+});
+observer.observe(document.body, { childList: true, subtree: true });
+function debounce(fn, wait = 120) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); };
+}
