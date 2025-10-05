@@ -30,7 +30,7 @@ const postsData = [
             './assets/navratri/pic7.jpeg',
             './assets/navratri/video1.mp4'
         ],
-        ts: Date.now(),
+        ts: new Date('2025-10-05T10:00:00').getTime(), // 👈 Fixed date/time (won’t change)
         isNew: true
     }
 ];
@@ -46,13 +46,14 @@ function finalizeImage(img) {
     img.alt = img.alt || 'Blog image';
 }
 
-// Render posts with improved carousel and lazy-loading
+// Render posts with improved carousel + READ MORE option
 function renderPosts() {
     postsEl.innerHTML = '';
     postsData.forEach((p) => {
         const card = document.createElement('article');
         card.className = 'post';
 
+        // 🆕 Badge
         if (p.isNew) {
             const badge = document.createElement('div');
             badge.className = 'badge';
@@ -60,6 +61,7 @@ function renderPosts() {
             card.appendChild(badge);
         }
 
+        // 🖼️ Carousel section
         if (p.images && p.images.length) {
             const carousel = document.createElement('div');
             carousel.className = 'carousel';
@@ -74,15 +76,13 @@ function renderPosts() {
                 slide.className = 'slide';
 
                 if (src.endsWith('.mp4')) {
-                    // Video element
                     const video = document.createElement('video');
                     video.src = src;
                     video.controls = true;
-                    video.width = 400; // optional size
+                    video.width = 400;
                     video.setAttribute('preload', 'metadata');
                     slide.appendChild(video);
                 } else {
-                    // Image element
                     const img = document.createElement('img');
                     img.dataset.src = src;
                     img.alt = p.title + (idx ? ` image ${idx + 1}` : '');
@@ -95,26 +95,25 @@ function renderPosts() {
 
             carousel.appendChild(slides);
 
+            // ▶️ Carousel controls
             if (p.images.length > 1) {
                 const left = document.createElement('button');
                 left.className = 'ctrl left';
                 left.type = 'button';
                 left.textContent = '◀';
-                left.setAttribute('aria-hidden', 'true');
 
                 const right = document.createElement('button');
                 right.className = 'ctrl right';
                 right.type = 'button';
                 right.textContent = '▶';
-                right.setAttribute('aria-hidden', 'true');
 
                 carousel.appendChild(left);
                 carousel.appendChild(right);
 
                 let pos = 0;
                 function updateControls() {
-                    left.setAttribute('aria-hidden', pos === 0 ? 'true' : 'false');
-                    right.setAttribute('aria-hidden', pos === p.images.length - 1 ? 'true' : 'false');
+                    left.style.opacity = pos === 0 ? 0.3 : 1;
+                    right.style.opacity = pos === p.images.length - 1 ? 0.3 : 1;
                 }
                 updateControls();
 
@@ -130,17 +129,10 @@ function renderPosts() {
                     updateControls();
                 });
 
-                // keyboard support
-                carousel.tabIndex = 0;
-                carousel.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowLeft') left.click();
-                    if (e.key === 'ArrowRight') right.click();
-                });
-
-                // touch swipe support
+                // Swipe control for mobile
                 let startX = 0, endX = 0;
-                carousel.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-                carousel.addEventListener('touchmove', (e) => { endX = e.touches[0].clientX; }, { passive: true });
+                carousel.addEventListener('touchstart', e => startX = e.touches[0].clientX, { passive: true });
+                carousel.addEventListener('touchmove', e => endX = e.touches[0].clientX, { passive: true });
                 carousel.addEventListener('touchend', () => {
                     const dx = endX - startX;
                     if (Math.abs(dx) > 40) { if (dx < 0) right.click(); else left.click(); }
@@ -151,16 +143,48 @@ function renderPosts() {
             card.appendChild(carousel);
         }
 
+        // 📝 Title
         const h2 = document.createElement('h2');
         h2.textContent = p.title;
         card.appendChild(h2);
 
+        // 📖 Description with Read More
         if (p.description) {
-            const pdesc = document.createElement('p');
-            pdesc.textContent = p.description;
-            card.appendChild(pdesc);
+            const desc = document.createElement('p');
+            const fullText = p.description.trim();
+            const shortText = fullText.slice(0, 250) + '...';
+            desc.textContent = shortText;
+            desc.style.maxHeight = '140px';
+            desc.style.overflow = 'hidden';
+            card.appendChild(desc);
+
+
+            // 🌈 Read More button (Creative + Animated)
+            const btn = document.createElement('button');
+            btn.className = 'read-btn';
+            btn.innerHTML = `<span>Read More</span>`; // added inner span for animation
+
+            btn.onclick = () => {
+                const expanded = btn.textContent.includes('Less');
+                desc.classList.toggle('expanded', !expanded);
+
+                // smooth text change animation
+                btn.querySelector('span').style.opacity = '0';
+                setTimeout(() => {
+                    btn.querySelector('span').textContent = expanded ? 'Read More' : 'Read Less';
+                    btn.querySelector('span').style.opacity = '1';
+                }, 200);
+
+                // expand/collapse description
+                desc.textContent = expanded ? shortText : fullText;
+                desc.style.maxHeight = expanded ? '140px' : '1000px';
+            };
+
+            card.appendChild(btn);
+
         }
 
+        // 💬 Quote
         if (p.quote) {
             const q = document.createElement('div');
             q.className = 'quote';
@@ -168,6 +192,7 @@ function renderPosts() {
             card.appendChild(q);
         }
 
+        // 🕒 Date & Time (Original only)
         const meta = document.createElement('div');
         meta.className = 'time';
         const { date, time } = formatDate(p.ts);
@@ -177,13 +202,11 @@ function renderPosts() {
         postsEl.appendChild(card);
     });
 
-    // after DOM created — finalize images and setup lazy-loading
-    document.querySelectorAll('.slide img').forEach(img => {
-        finalizeImage(img);
-    });
-
+    // finalize + lazy load
+    document.querySelectorAll('.slide img').forEach(img => finalizeImage(img));
     setupLazyLoading();
 }
+
 renderPosts();
 
 // LAZY LOADING using IntersectionObserver
@@ -206,7 +229,6 @@ function setupLazyLoading() {
             else if (i.src) finalizeImage(i);
         });
     } else {
-        // fallback
         imgs.forEach(i => {
             if (i.dataset.src) i.src = i.dataset.src;
         });
@@ -214,10 +236,11 @@ function setupLazyLoading() {
 }
 
 // ===================== Security / Content Protection ===================== //
-document.addEventListener('contextmenu', e => { e.preventDefault(); });
+document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
     if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J'].includes(e.key.toUpperCase())) || (e.ctrlKey && e.key.toUpperCase() === 'U')) {
-        e.preventDefault(); alert("Inspect / View Source is disabled on this page.");
+        e.preventDefault();
+        alert("Inspect / View Source is disabled on this page.");
     }
 });
 document.addEventListener('keyup', function (e) {
